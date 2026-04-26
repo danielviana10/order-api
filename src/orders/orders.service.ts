@@ -19,9 +19,21 @@ export class OrdersService {
             },
         });
 
-        await this.ordersQueue.add("process-order", {
-            orderId: order.id,
-        });
+        await this.ordersQueue.add(
+            "process-order",
+            {
+                orderId: order.id,
+            },
+            {
+                attempts: 5,
+                backoff: {
+                    type: "exponential",
+                    delay: 2000,
+                },
+                removeOnComplete: true,
+                removeOnFail: false,
+            },
+        );
 
         return order;
     }
