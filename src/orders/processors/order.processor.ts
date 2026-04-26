@@ -22,7 +22,7 @@ export class OrdersProcessor {
 
         const random = Math.random();
 
-        if (random < 100) {
+        if (random < 0.7) {
             console.log("Falha simulada!", [orderId, random]);
             throw new Error("Erro na API de pagamento");
         }
