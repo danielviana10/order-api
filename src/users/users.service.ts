@@ -18,6 +18,14 @@ export class UsersService {
     private async findActiveUserOrThrow(id: string) {
         const user = await this.prisma.user.findFirst({
             where: { id, deletedAt: null },
+            select: {
+                id: true,
+                name: true,
+                lastName: true,
+                email: true,
+                createdAt: true,
+                updatedAt: true,
+            },
         });
 
         if (!user) {
@@ -35,12 +43,14 @@ export class UsersService {
         const user = await this.prisma.user.create({
             data: {
                 name: data.name,
+                lastName: data.lastName,
                 email: data.email,
                 password: hashedPassword,
             },
             select: {
                 id: true,
                 name: true,
+                lastName: true,
                 email: true,
                 createdAt: true,
                 updatedAt: true,
@@ -56,6 +66,7 @@ export class UsersService {
             select: {
                 id: true,
                 name: true,
+                lastName: true,
                 email: true,
                 createdAt: true,
                 updatedAt: true,
@@ -96,6 +107,7 @@ export class UsersService {
             select: {
                 id: true,
                 name: true,
+                lastName: true,
                 email: true,
                 createdAt: true,
                 updatedAt: true,

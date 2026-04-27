@@ -20,7 +20,6 @@ import { UpdateUserDto } from "./dto/update-user.dto";
 export class UsersController {
     constructor(private usersService: UsersService) {}
 
-    @UseGuards(JwtAuthGuard)
     @Post()
     async create(@Body() data: CreateUserDto) {
         return this.usersService.create(data);
@@ -44,6 +43,7 @@ export class UsersController {
         return user;
     }
 
+    @UseGuards(JwtAuthGuard)
     @Patch(":id")
     async update(
         @Param("id", ParseUUIDPipe) id: string,
@@ -52,6 +52,7 @@ export class UsersController {
         return this.usersService.updateOne(id, updateUserDto);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Delete(":id")
     async remove(@Param("id", new ParseUUIDPipe()) id: string) {
         return this.usersService.remove(id);

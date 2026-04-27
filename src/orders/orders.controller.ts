@@ -1,7 +1,14 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
+import {
+    BadRequestException,
+    Body,
+    Controller,
+    Headers,
+    Post,
+    UseGuards,
+} from "@nestjs/common";
 import { OrdersService } from "./orders.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import type { RequestWithUser } from "./interfaces/orders.interface";
+import { CreateOrderDto } from "./dto/create-order.dtio";
 
 @Controller("orders")
 export class OrdersController {
@@ -9,14 +16,14 @@ export class OrdersController {
 
     @UseGuards(JwtAuthGuard)
     @Post()
-    create(@Req() req: RequestWithUser, @Body() body: { amount: number }) {
-        const userId = req.user.userId;
-        return this.ordersService.create(userId, body.amount);
-    }
+    create(
+        @Body() body: CreateOrderDto,
+        @Headers("idempotency-key") idempotencyKey: string,
+    ) {
+        if (!idempotencyKey) {
+            throw new BadRequestException("Idempotency-Key é obrigatória");
+        }
 
-    @UseGuards(JwtAuthGuard)
-    @Get()
-    findAll(@Req() req: RequestWithUser) {
-        return this.ordersService.findAll(req.user.userId);
+        return this.ordersService.create(body, idempotencyKey);
     }
 }

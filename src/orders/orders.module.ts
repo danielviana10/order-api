@@ -2,7 +2,8 @@ import { Module } from "@nestjs/common";
 import { OrdersController } from "./orders.controller";
 import { OrdersService } from "./orders.service";
 import { BullModule } from "@nestjs/bull";
-import { OrdersProcessor } from "./processors/order.processor";
+import { OrdersProcessor } from "./processors/orders.processor";
+import { OrdersWebhookController } from "./webhooks/orders.webhook";
 
 @Module({
     imports: [
@@ -10,7 +11,7 @@ import { OrdersProcessor } from "./processors/order.processor";
             name: "orders",
         }),
     ],
-    controllers: [OrdersController],
+    controllers: [OrdersController, OrdersWebhookController],
     providers: [OrdersService, OrdersProcessor],
 })
 export class OrdersModule {}

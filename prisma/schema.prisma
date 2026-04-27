@@ -21,24 +21,27 @@ enum OrderStatus {
 model User {
   id           String    @id @default(uuid())
   name         String
+  lastName     String
   email        String    @unique
   password     String
   refreshToken String?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
   deletedAt    DateTime?
 
   order Order[]
 }
 
 model Order {
-  id        String      @id @default(uuid())
-  amount    Float
-  status    OrderStatus @default(PENDING)
-  userId    String
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @default(now())
-  deletedAt DateTime?
+  id             String      @id @default(uuid())
+  amount         Float
+  status         OrderStatus @default(PENDING)
+  userId         String
+  externalId     String?     @unique
+  idempotencyKey String      @unique
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @default(now()) @updatedAt
+  deletedAt      DateTime?
 
   user User @relation(fields: [userId], references: [id])
 }
