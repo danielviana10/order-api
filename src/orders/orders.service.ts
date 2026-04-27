@@ -1,7 +1,7 @@
 import { InjectQueue } from "@nestjs/bull";
 import { PrismaService } from "../infra/database/prisma.service";
 import { Queue } from "bullmq";
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import type { Cache } from "cache-manager";
 import { CreateOrderDto } from "./dto/create-order.dtio";
@@ -15,6 +15,34 @@ export class OrdersService {
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) {}
 
+    orderSelect = {
+        id: true,
+        amount: true,
+        status: true,
+        userId: true,
+        createdAt: true,
+        updatedAt: true,
+    };
+
+    private async findOrderOrThrow(userId?: string, orderId?: string) {
+        const order = await this.prisma.order.findFirst({
+            where: {
+                OR: [
+                    { userId: userId || undefined },
+                    { id: orderId || undefined },
+                ],
+                deletedAt: null,
+            },
+            select: this.orderSelect,
+        });
+
+        if (!order) {
+            throw new NotFoundException("Pedido não encontrado");
+        }
+
+        return order;
+    }
+
     async create(
         data: CreateOrderDto,
         idempotencyKey: string,
@@ -23,14 +51,7 @@ export class OrdersService {
 
         const existing = await this.prisma.order.findFirst({
             where: { idempotencyKey },
-            select: {
-                id: true,
-                amount: true,
-                status: true,
-                userId: true,
-                createdAt: true,
-                updatedAt: true,
-            },
+            select: this.orderSelect,
         });
 
         if (existing) {
@@ -43,14 +64,7 @@ export class OrdersService {
                 amount,
                 idempotencyKey,
             },
-            select: {
-                id: true,
-                amount: true,
-                status: true,
-                userId: true,
-                createdAt: true,
-                updatedAt: true,
-            },
+            select: this.orderSelect,
         });
 
         await this.ordersQueue.add("process-order", {
@@ -60,22 +74,34 @@ export class OrdersService {
         return order;
     }
 
-    async findAll(userId: string) {
-        const cacheKey = `orders:${userId}`;
+    async findOne(userId: string): Promise<OrderResponseDto> {
+        const order = await this.findOrderOrThrow(userId);
 
-        const cached = await this.cacheManager.get(cacheKey);
+        return order;
+    }
 
-        if (cached) {
-            return cached;
-        }
-
+    async findAll(): Promise<OrderResponseDto[]> {
         const orders = await this.prisma.order.findMany({
-            where: { userId },
-            orderBy: { createdAt: "desc" },
+            where: { deletedAt: null },
+            select: this.orderSelect,
+            orderBy: {
+                createdAt: "desc",
+            },
         });
 
-        await this.cacheManager.set(cacheKey, orders, 120);
+        return orders.map((orders) => new OrderResponseDto(orders));
+    }
 
-        return orders;
+    async remove(id: string) {
+        await this.findOrderOrThrow(id);
+
+        await this.prisma.order.update({
+            where: { id },
+            data: {
+                deletedAt: new Date(),
+            },
+        });
+
+        return { message: true };
     }
 }

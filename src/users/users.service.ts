@@ -10,22 +10,26 @@ import { UserResponseDto } from "./dto/user-response.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { validateEmailUniqueness } from "./utils/validate-email";
 import { buildUserUpdateData } from "./utils/build-user-update-data";
+import { PaginationDto } from "../dto/paginated-response.dto";
+import { UserPaginatedResponseDto } from "./dto/user-paginated-response.dto";
 
 @Injectable()
 export class UsersService {
     constructor(private prisma: PrismaService) {}
 
+    userSelect = {
+        id: true,
+        name: true,
+        lastName: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+    };
+
     private async findActiveUserOrThrow(id: string) {
         const user = await this.prisma.user.findFirst({
             where: { id, deletedAt: null },
-            select: {
-                id: true,
-                name: true,
-                lastName: true,
-                email: true,
-                createdAt: true,
-                updatedAt: true,
-            },
+            select: this.userSelect,
         });
 
         if (!user) {
@@ -47,36 +51,39 @@ export class UsersService {
                 email: data.email,
                 password: hashedPassword,
             },
-            select: {
-                id: true,
-                name: true,
-                lastName: true,
-                email: true,
-                createdAt: true,
-                updatedAt: true,
-                deletedAt: true,
-            },
+            select: this.userSelect,
         });
 
         return user;
     }
 
-    async findAll(): Promise<UserResponseDto[]> {
-        const users = await this.prisma.user.findMany({
-            select: {
-                id: true,
-                name: true,
-                lastName: true,
-                email: true,
-                createdAt: true,
-                updatedAt: true,
-            },
-            where: {
-                deletedAt: null,
-            },
-        });
+    async findAll(
+        pagination: PaginationDto,
+    ): Promise<UserPaginatedResponseDto> {
+        const { page = 1, limit = 10 } = pagination;
 
-        return users.map((user) => new UserResponseDto(user));
+        const skip = (page - 1) * limit;
+
+        const [users, total] = await this.prisma.$transaction([
+            this.prisma.user.findMany({
+                select: this.userSelect,
+                where: {
+                    deletedAt: null,
+                },
+                orderBy: {
+                    createdAt: "desc",
+                },
+                skip,
+                take: limit,
+            }),
+            this.prisma.user.count({
+                where: { deletedAt: null },
+            }),
+        ]);
+
+        const userDtos = users.map((user) => new UserResponseDto(user));
+
+        return new UserPaginatedResponseDto(userDtos, total, page, limit);
     }
 
     async findOne(id: string): Promise<UserResponseDto> {
@@ -104,14 +111,7 @@ export class UsersService {
                 ...updateData,
                 updatedAt: new Date(),
             },
-            select: {
-                id: true,
-                name: true,
-                lastName: true,
-                email: true,
-                createdAt: true,
-                updatedAt: true,
-            },
+            select: this.userSelect,
         });
 
         return new UserResponseDto(updatedUser);

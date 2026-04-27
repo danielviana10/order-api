@@ -3,11 +3,11 @@ import {
     Controller,
     Delete,
     Get,
-    NotFoundException,
     Param,
     ParseUUIDPipe,
     Patch,
     Post,
+    Query,
     UseGuards,
 } from "@nestjs/common";
 import { UsersService } from "./users.service";
@@ -15,6 +15,7 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { UserResponseDto } from "./dto/user-response.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
+import { PaginationDto } from "../dto/paginated-response.dto";
 
 @Controller("users")
 export class UsersController {
@@ -27,8 +28,8 @@ export class UsersController {
 
     @UseGuards(JwtAuthGuard)
     @Get()
-    async findAll(): Promise<UserResponseDto[]> {
-        return this.usersService.findAll();
+    async findAll(@Query() query: PaginationDto) {
+        return this.usersService.findAll(query);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -36,11 +37,7 @@ export class UsersController {
     async findOne(
         @Param("id", ParseUUIDPipe) id: string,
     ): Promise<UserResponseDto> {
-        const user = await this.usersService.findOne(id);
-        if (!user) {
-            throw new NotFoundException("Usuário não encontrado");
-        }
-        return user;
+        return await this.usersService.findOne(id);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -54,7 +51,7 @@ export class UsersController {
 
     @UseGuards(JwtAuthGuard)
     @Delete(":id")
-    async remove(@Param("id", new ParseUUIDPipe()) id: string) {
+    async remove(@Param("id", ParseUUIDPipe) id: string) {
         return this.usersService.remove(id);
     }
 }
