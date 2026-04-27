@@ -2,6 +2,7 @@ import { OnQueueFailed, Process, Processor } from "@nestjs/bull";
 import { PrismaService } from "../../infra/database/prisma.service";
 import { Job } from "bullmq";
 import { ProcessOrderJobData } from "../interfaces/orders.interface";
+import { OrderStatus } from "@prisma/client";
 
 @Processor("orders")
 export class OrdersProcessor {
@@ -17,7 +18,7 @@ export class OrdersProcessor {
 
         await this.prisma.order.update({
             where: { id: orderId },
-            data: { status: "PROCESSING", updatedAt: new Date() },
+            data: { status: OrderStatus.PROCESSING, updatedAt: new Date() },
         });
 
         const random = Math.random();
@@ -31,7 +32,7 @@ export class OrdersProcessor {
 
         await this.prisma.order.update({
             where: { id: orderId },
-            data: { status: "COMPLETED", updatedAt: new Date() },
+            data: { status: OrderStatus.COMPLETED, updatedAt: new Date() },
         });
 
         console.log(`Pedido ${orderId} processado com sucesso!`);
@@ -45,7 +46,7 @@ export class OrdersProcessor {
 
         await this.prisma.order.update({
             where: { id: orderId },
-            data: { status: "FAILED" },
+            data: { status: OrderStatus.FAILED },
         });
     }
 }

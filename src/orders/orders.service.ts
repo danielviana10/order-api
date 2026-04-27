@@ -3,7 +3,8 @@ import { PrismaService } from "../infra/database/prisma.service";
 import { Queue } from "bullmq";
 import { Inject, Injectable } from "@nestjs/common";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
-import { Cache } from "cache-manager";
+import type { Cache } from "cache-manager";
+import { OrderStatus } from "@prisma/client";
 
 @Injectable()
 export class OrdersService {
@@ -18,7 +19,7 @@ export class OrdersService {
             data: {
                 userId,
                 amount,
-                status: "PENDING",
+                status: OrderStatus.PENDING,
             },
         });
 
@@ -37,7 +38,7 @@ export class OrdersService {
             console.error("⚠️ Redis indisponível, job não enfileirado:", error);
             await this.prisma.order.update({
                 where: { id: order.id },
-                data: { status: "FAILED" },
+                data: { status: OrderStatus.FAILED },
             });
         }
 

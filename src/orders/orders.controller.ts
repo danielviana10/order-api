@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
 import { OrdersService } from "./orders.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RequestWithUser } from "./interfaces/orders.interface";
+import type { RequestWithUser } from "./interfaces/orders.interface";
 
 @Controller("orders")
 export class OrdersController {

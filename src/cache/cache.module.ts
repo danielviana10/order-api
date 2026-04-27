@@ -1,21 +1,21 @@
 import { CacheModule } from "@nestjs/cache-manager";
 import { Module } from "@nestjs/common";
-import * as redisStore from "cache-manager-ioredis";
+import { redisStore } from "cache-manager-redis-yet";
 
 @Module({
     imports: [
-        CacheModule.register({
+        CacheModule.registerAsync({
             isGlobal: true,
-            store: redisStore,
-            host: "localhost",
-            port: 6379,
-            ttl: 120,
-            connectTimeout: 3000,
-            maxRetriesPerRequest: 1,
-            enableReadyCheck: false,
-            reconnectOnError: () => false,
+            useFactory: async () => ({
+                store: await redisStore({
+                    socket: {
+                        host: "localhost",
+                        port: 6379,
+                    },
+                    ttl: 120,
+                }),
+            }),
         }),
     ],
-    exports: [CacheModule],
 })
 export class AppCacheModule {}
