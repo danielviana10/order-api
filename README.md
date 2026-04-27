@@ -1,98 +1,174 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🧾 Order API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API de gerenciamento de pedidos construída com **NestJS**, utilizando arquitetura modular, banco de dados relacional com **PostgreSQL + Prisma**, processamento assíncrono com **BullMQ + Redis** e simulação de fluxo de pagamentos com **webhooks e idempotência**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Tecnologias utilizadas
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- [NestJS](https://nestjs.com/)
+- [Prisma ORM](https://www.prisma.io/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Redis](https://redis.io/)
+- [BullMQ](https://docs.bullmq.io/)
+- JWT Authentication
+- bcrypt
+- TypeScript
 
-## Project setup
+---
+
+## Funcionalidades
+
+### Usuários
+- Criar usuário
+- Buscar usuários (findAll / findOne)
+- Atualizar usuário
+- Soft delete (remoção lógica)
+- Hash de senha com bcrypt
+
+---
+
+### Pedidos (Orders)
+- Criar pedidos
+- Idempotência via `idempotency-key`
+- Processamento assíncrono com fila (BullMQ)
+- Simulação de pagamento externo
+- Atualização de status (PENDING → PROCESSING → COMPLETED/FAILED)
+- Soft delete
+
+---
+
+### Sistema de Pagamento (simulado)
+- Integração com worker assíncrono
+- Geração de `externalId`
+- Webhook de retorno de pagamento
+- Atualização de status baseada no gateway
+- Proteção contra duplicidade (idempotência)
+
+---
+
+### Filas (Queue System)
+- Processamento de pedidos em background
+- Retry automático com backoff exponencial
+- Tratamento de falhas
+- Logging de jobs
+
+---
+
+### Autenticação
+- Login com JWT
+- Refresh token armazenado no banco
+- Proteção de rotas com Guards
+
+---
+
+### Cache (Redis)
+- Invalidação de cache após alterações
+- Uso opcional para performance em listagens
+
+---
+
+## Arquitetura
+
+O projeto segue uma arquitetura modular:
+
+
+src/
+├── auth/
+├── users/
+├── orders/
+│ ├── processors/
+│ ├── webhooks/
+│ ├── dto/
+│ └── utils/
+├── infra/
+│ ├── database (Prisma)
+│ └── queue (BullMQ)
+├── common/
+│ ├── filters
+│ ├── interceptors
+│ └── pipes
+
+
+---
+
+## Fluxo de Pedido
+
+1. Usuário cria um pedido
+2. API registra pedido como `PENDING`
+3. Job é enviado para fila (BullMQ)
+4. Worker processa pedido
+5. Sistema simula gateway de pagamento
+6. Gateway chama webhook
+7. Status do pedido é atualizado automaticamente
+
+---
+
+## Idempotência
+
+Para evitar duplicidade de pedidos:
+
+- Cada request pode enviar `Idempotency-Key`
+- O sistema verifica se o pedido já existe antes de criar um novo
+- Garante segurança em retries e falhas de rede
+
+---
+
+## Webhook
+
+Endpoint responsável por receber eventos do “gateway de pagamento”:
+
+
+POST /api/webhooks/payment
+
+
+Responsável por:
+- Validar pagamento
+- Atualizar status do pedido
+- Garantir idempotência (não processar duplicado)
+
+---
+
+## Testes
+
+- Jest configurado
+- Testes unitários de services
+- Estrutura preparada para E2E
+
+---
+
+## Como rodar o projeto
 
 ```bash
-$ npm install
+# instalar dependências
+npm install
+
+# subir banco
+docker-compose up -d
+
+# rodar migrations
+npx prisma migrate dev
+
+# iniciar aplicação
+npm run start:dev
 ```
 
-## Compile and run the project
+Variáveis de ambiente
+DATABASE_URL=
+JWT_SECRET=
+REDIS_HOST=
+REDIS_PORT=
+PORT=3000
 
-```bash
-# development
-$ npm run start
+Próximos passos
+- Paginação (cursor-based)
+- Observabilidade (logs estruturados + tracing)
+- Rate limiting
+- Testes E2E completos
+- Integração com gateway real de pagamento
 
-# watch mode
-$ npm run start:dev
+Autor
 
-# production mode
-$ npm run start:prod
-```
+Desenvolvido por Daniel Viana
 
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Projeto focado em backend, arquitetura e sistemas escaláveis.
