@@ -71,8 +71,7 @@ API de gerenciamento de pedidos construída com **NestJS**, utilizando arquitetu
 ## Arquitetura
 
 O projeto segue uma arquitetura modular:
-
-
+<pre>
 src/
 ├── auth/
 ├── users/
@@ -88,7 +87,7 @@ src/
 │ ├── filters
 │ ├── interceptors
 │ └── pipes
-
+</pre>
 
 ---
 
