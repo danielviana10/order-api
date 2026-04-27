@@ -154,10 +154,6 @@ npm run start:dev
 
 Variáveis de ambiente
 DATABASE_URL=
-JWT_SECRET=
-REDIS_HOST=
-REDIS_PORT=
-PORT=3000
 
 Próximos passos
 - Paginação (cursor-based)
